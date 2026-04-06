@@ -3,25 +3,42 @@ const bcrypt = require("bcryptjs");
 
 exports.signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    console.log("Signup request body:", req.body);
 
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ msg: "User already exists" });
+    const { username, email, password } = req.body;
+
+    // ✅ validation
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
+    // ✅ check existing user
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // ✅ hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
-      name,
+    // ✅ create user
+    const newUser = await User.create({
+      username,
       email,
-      password: hashedPassword
+      password: hashedPassword,
     });
 
-    res.json({ message: "Signup successful", userId: user._id });
+    res.status(201).json({
+      message: "Signup successful",
+      user: newUser,
+    });
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("🔥 SIGNUP ERROR:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
 
